@@ -3,12 +3,28 @@
 #   :cpu  :cuda12  :cuda13  (+ :<version>-<variant> on tags, :latest = cpu)
 name: Docker
 
+# Only changes that affect the image trigger a build (docs, chart and test-only
+# edits do not). Release tags always build: GitHub ignores path filters for tag
+# pushes. Use "Run workflow" (workflow_dispatch) to force a rebuild.
 on:
   push:
     branches: [main]
     tags: ["v*.*.*"]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - requirements/runtime.txt
+      - asr_server/**
+      - scripts/smoke_test.sh
+      - .github/workflows/docker.yml
   pull_request:
-    paths: [Dockerfile, requirements/runtime.txt, asr_server/**, scripts/smoke_test.sh, .github/workflows/docker.yml]
+    paths:  # keep in sync with push.paths
+      - Dockerfile
+      - .dockerignore
+      - requirements/runtime.txt
+      - asr_server/**
+      - scripts/smoke_test.sh
+      - .github/workflows/docker.yml
   workflow_dispatch:
 
 permissions:
