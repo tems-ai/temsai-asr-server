@@ -261,6 +261,10 @@ model:
   runners and publishes multi-arch manifests to GHCR;
 - **Run workflow** (manual) builds all six without publishing.
 
+Contributions are welcome. Pull requests are accepted under the
+[contribution terms](CONTRIBUTING.md#contribution-terms): Apache-2.0, signed
+off with `git commit -s`, and usable in the official images.
+
 ## License
 
 **Source code: [Apache-2.0](LICENSE).** You can use, modify and redistribute the
