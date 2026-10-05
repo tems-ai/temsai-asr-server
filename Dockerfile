@@ -16,8 +16,12 @@
 ARG BASE_IMAGE=python:3.12-slim-bookworm
 ARG FFMPEG_IMAGE=mwader/static-ffmpeg:8.1.1
 
+# DL3006: both images ARE pinned — via the ARG defaults above; hadolint
+# 2.12 can't resolve ARG-substituted tags.
+# hadolint ignore=DL3006
 FROM ${FFMPEG_IMAGE} AS ffmpeg
 
+# hadolint ignore=DL3006
 FROM ${BASE_IMAGE} AS base
 
 # --- dependencies -------------------------------------------------------------
