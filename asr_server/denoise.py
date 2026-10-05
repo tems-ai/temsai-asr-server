@@ -1,4 +1,20 @@
-"""Two-stage classic DSP denoise front-end for factory-floor narration.
+"""Optional denoise front-end for factory-floor narration (DENOISE_ENABLED,
+off by default). DENOISE_METHOD picks one of two.
+
+Why off: on benchmark/ (a 214-word passage, TTS and a real recording, mixed
+with pink, machine and industrial noise from 20 to -5 dB SNR) Parakeet v3 with
+NO denoise averaged 2.7% WER across 13 conditions; spectral 3.3%, RNNoise
+2.8-4.0%. Parakeet is trained on noisy speech, and enhancer artifacts cost it
+more than the noise does. Turn it on only where it measurably helps your audio.
+
+rnnoise: RNNoise via FFmpeg's built-in arnndn filter (no extra library, just a
+.rnnn model file). Full strength HURT (std model 4.0%, pink 0 dB 7.9%->15.0%);
+mix=0.5 blends half the original back in and cut that loss to 2.95% (pink
+5 dB 2.8%->1.9%, but pink 0 dB still 12.1%). The "sh" model from
+GregorR/rnnoise-models scored 2.8% at mix=0.5, but ships without a clear
+license, so the BSD-3 Xiph "std" model is the default.
+
+spectral: classic DSP, the three stages below.
 
 Stage 1: 4th-order Butterworth high-pass at 80 Hz (SOS form — numerically
 stable at steep orders). Machine noise (motor hum, conveyor rumble, HVAC)
@@ -20,6 +36,7 @@ Failure policy: best-effort — any error returns the original path
 
 import logging
 import os
+import subprocess
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -28,19 +45,41 @@ HIGHPASS_HZ = 80
 HIGHPASS_ORDER = 4
 PROP_DECREASE = 0.85
 N_FFT = 1024
+RNNOISE_MIX = 0.5  # share of denoised signal; 1.0 (full) measured worse, see above
 
 
-def denoise_wav(src_path: str, workdir: str) -> str:
+def denoise_wav(src_path: str, workdir: str, method: str = "spectral", rnnoise_model: str = "") -> str:
     """Denoise a 16 kHz mono PCM16 WAV; return the cleaned path, or
     src_path unchanged when the input is too short or processing fails."""
     try:
-        return _denoise(src_path, workdir)
+        if method == "rnnoise":
+            return _rnnoise(src_path, workdir, rnnoise_model)
+        return _spectral(src_path, workdir)
     except Exception:  # noqa: BLE001 — degrade to undenoised audio, never fail the request
-        logger.exception("denoise failed — transcribing undenoised audio")
+        logger.exception("denoise (%s) failed — transcribing undenoised audio", method)
         return src_path
 
 
-def _denoise(src_path: str, workdir: str) -> str:
+def _rnnoise(src_path: str, workdir: str, model_path: str) -> str:
+    if not os.path.isfile(model_path):
+        raise FileNotFoundError(f"RNNoise model not found: {model_path!r} (set RNNOISE_MODEL_PATH)")
+    if "'" in model_path:
+        raise ValueError("RNNoise model path must not contain a single quote")
+    out = os.path.join(workdir, f"{uuid.uuid4().hex}_denoised.wav")
+    # arnndn runs at 48 kHz; FFmpeg resamples in and back out to 16 kHz. The
+    # quotes keep ':' in the path from being read as an option separator.
+    filtergraph = f"arnndn=m='{model_path}':mix={RNNOISE_MIX}"
+    proc = subprocess.run(
+        ["ffmpeg", "-nostdin", "-y", "-v", "error", "-i", src_path, "-af", filtergraph]
+        + ["-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", out],
+        capture_output=True,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"ffmpeg arnndn rc={proc.returncode}: {proc.stderr[-500:].decode(errors='replace')}")
+    return out
+
+
+def _spectral(src_path: str, workdir: str) -> str:
     import noisereduce as nr
     import numpy as np
     from scipy.io import wavfile

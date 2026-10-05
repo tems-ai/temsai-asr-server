@@ -4,6 +4,7 @@ from asr_server.config import (
     DEFAULT_ENGLISH_MODEL_REVISION,
     DEFAULT_MODEL_REPO,
     DEFAULT_MODEL_REVISION,
+    DEFAULT_RNNOISE_MODEL_PATH,
     Settings,
 )
 
@@ -21,6 +22,8 @@ ENV_VARS = [
     "TORCH_NUM_THREADS",
     "MAX_UPLOAD_BYTES",
     "DENOISE_ENABLED",
+    "DENOISE_METHOD",
+    "RNNOISE_MODEL_PATH",
     "API_KEY",
     "LONG_AUDIO_SECONDS",
     "MAX_AUDIO_SECONDS",
@@ -43,7 +46,9 @@ def test_defaults():
     assert s.device == "auto"
     assert s.torch_num_threads is None
     assert s.max_upload_bytes == 200 * 1024 * 1024
-    assert s.denoise is True
+    assert s.denoise is False
+    assert s.denoise_method == "rnnoise"
+    assert s.rnnoise_model == DEFAULT_RNNOISE_MODEL_PATH
     assert s.api_key == ""
     assert s.long_audio_seconds == 180
     assert s.max_audio_seconds == 0
@@ -73,7 +78,7 @@ def test_explicit_path_and_id(monkeypatch):
 
 @pytest.mark.parametrize(
     "raw,expected",
-    [("0", False), ("false", False), ("OFF", False), ("1", True), ("Yes", True), ("", True), ("  ", True)],
+    [("0", False), ("false", False), ("OFF", False), ("1", True), ("Yes", True), ("", False), ("  ", False)],
 )
 def test_bool_parsing(monkeypatch, raw, expected):
     monkeypatch.setenv("DENOISE_ENABLED", raw)
@@ -84,6 +89,7 @@ def test_bool_parsing(monkeypatch, raw, expected):
     "name,value",
     [
         ("DENOISE_ENABLED", "maybe"),
+        ("DENOISE_METHOD", "deepfilter"),
         ("DEVICE", "tpu"),
         ("MAX_UPLOAD_BYTES", "lots"),
         ("MAX_UPLOAD_BYTES", "0"),

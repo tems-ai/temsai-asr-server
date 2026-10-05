@@ -99,7 +99,9 @@ spec:
             - name: DEVICE
               value: "auto"
             - name: DENOISE_ENABLED
-              value: "true"
+              value: "false"
+            - name: DENOISE_METHOD
+              value: "rnnoise"
             - name: MAX_UPLOAD_BYTES
               value: "209715200"
             - name: MAX_AUDIO_SECONDS

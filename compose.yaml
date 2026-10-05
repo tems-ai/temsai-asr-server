@@ -16,7 +16,8 @@ services:
       API_KEY: ${API_KEY:-}
       # Optional English-only model (better on noisy English; +~3 GB RAM).
       ENGLISH_MODEL_ENABLED: ${ENGLISH_MODEL_ENABLED:-false}
-      DENOISE_ENABLED: ${DENOISE_ENABLED:-true}
+      DENOISE_ENABLED: ${DENOISE_ENABLED:-false}
+      DENOISE_METHOD: ${DENOISE_METHOD:-rnnoise}
       MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-209715200}
       MAX_AUDIO_SECONDS: ${MAX_AUDIO_SECONDS:-0}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}

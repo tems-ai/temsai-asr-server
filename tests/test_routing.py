@@ -47,7 +47,7 @@ def test_denoise_skipped_for_en_model(client, wav_bytes, monkeypatch):
     # Measured on noisy ground-truth audio: denoise helps v3 (48->32% WER)
     # but HURTS v2 (24->28%) — the English path must bypass it.
     calls = []
-    monkeypatch.setattr("asr_server.main.denoise_wav", lambda wav, workdir: calls.append(wav) or wav)
+    monkeypatch.setattr("asr_server.main.denoise_wav", lambda wav, workdir, *_: calls.append(wav) or wav)
     post_audio(client, wav_bytes, language="en")
     assert calls == []
     post_audio(client, wav_bytes, language="de")
