@@ -8,7 +8,7 @@ Compares ASR engines by word error rate on one recording at several noise levels
 - `noise_benchmark.py`: mixes the noise in at the requested SNRs and scores each engine through the
   OpenAI `/v1/audio/transcriptions` API (or local openai-whisper).
 
-The WAVs are not committed (the repo ignores `*.wav`); recreate them with:
+Both WAVs are synthetic and committed with `git add -f` (the repo ignores `*.wav`). They were made with:
 
 ```bash
 espeak-ng -v en-us -s 190 -w /tmp/tts.wav -f benchmark/extinguisher.txt
