@@ -30,3 +30,23 @@ python benchmark/noise_benchmark.py --audio benchmark/extinguisher.wav --referen
 
 TTS speech is cleaner than a real recording, so treat the results as indicative; differences show mainly
 in the noisy conditions.
+
+## Industrial-noise set (user recording)
+
+`speech_clean.mp3` is the clean reference recording (67.6 s). `make_industrial_noise.py` synthesizes a
+factory noise bed (`industrial_noise.wav`: 50 Hz motor hum with harmonics, ventilation rumble, conveyor
+rattle, metal impacts every 0.8–3 s, pneumatic air bursts every 4–9 s) and mixes it in at five levels:
+
+| File | Speech-to-noise ratio |
+| --- | ---: |
+| `speech_noise_1_low.wav` | 20 dB |
+| `speech_noise_2_moderate.wav` | 10 dB |
+| `speech_noise_3_high.wav` | 5 dB |
+| `speech_noise_4_very_high.wav` | 0 dB |
+| `speech_noise_5_extreme.wav` | −5 dB |
+
+```bash
+python benchmark/make_industrial_noise.py benchmark/speech_clean.mp3 --out benchmark
+```
+
+The output is deterministic (`--seed 7`). Each file is peak-normalized to −0.9 dBFS.
