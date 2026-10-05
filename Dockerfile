@@ -66,6 +66,21 @@ r = sys.argv[1]; hf_hub_download(r, r.rsplit('/', 1)[-1] + '.nemo', revision=sys
          && rm -rf /models/.cache; \
        fi
 
+# --- RNNoise model ---------------------------------------------------------------
+# The original Xiph model, BSD-3-Clause (see NOTICE), pinned by commit and
+# SHA-256. Verified here rather than with ADD --checksum, which hadolint 2.12
+# rejects as an invalid flag.
+FROM base AS rnnoise
+ARG RNNOISE_URL=https://raw.githubusercontent.com/richardpl/arnndn-models/0fda24c46d78f0207d820bb970fbe85c1971b39c/std.rnnn
+ARG RNNOISE_SHA256=6b8943dc4a9b6b24425873992a44f29c0577503276456af46a8854774faeb294
+RUN mkdir -p /usr/local/share/rnnoise \
+    && python -c "import hashlib, sys, urllib.request; \
+data = urllib.request.urlopen(sys.argv[1], timeout=60).read(); \
+got = hashlib.sha256(data).hexdigest(); \
+sys.exit(f'sha256 mismatch: {got}') if got != sys.argv[2] else None; \
+open('/usr/local/share/rnnoise/std.rnnn', 'wb').write(data)" "$RNNOISE_URL" "$RNNOISE_SHA256" \
+    && chmod 644 /usr/local/share/rnnoise/std.rnnn
+
 # --- runtime --------------------------------------------------------------------
 FROM base AS runtime
 ARG TORCH_VARIANT=cpu
@@ -94,11 +109,8 @@ RUN apt-get update \
 # Static ffmpeg/ffprobe (multi-arch). Never apt ffmpeg (~450 MB of desktop deps).
 COPY --from=ffmpeg /ffmpeg /ffprobe /usr/local/bin/
 
-# RNNoise model for ffmpeg's arnndn filter (DENOISE_METHOD=rnnoise): the
-# original Xiph model, BSD-3-Clause (see NOTICE), pinned by commit and SHA-256.
-ADD --chmod=755 --checksum=sha256:6b8943dc4a9b6b24425873992a44f29c0577503276456af46a8854774faeb294 \
-    https://raw.githubusercontent.com/richardpl/arnndn-models/0fda24c46d78f0207d820bb970fbe85c1971b39c/std.rnnn \
-    /usr/local/share/rnnoise/std.rnnn
+# RNNoise model for ffmpeg's arnndn filter (DENOISE_METHOD=rnnoise).
+COPY --from=rnnoise /usr/local/share/rnnoise /usr/local/share/rnnoise
 
 # NeMo writes cache/config under $HOME, so the user gets a real home directory.
 RUN groupadd -g 1000 asr \
