@@ -1,6 +1,7 @@
 # Image builds, natively on amd64 and arm64 runners (no QEMU); every image is
 # smoke-tested with the real model before anything is pushed.
-#   - push to main / pull request: CPU linux/amd64 only (fast check, nothing published)
+#   - push to main / pull request: CPU linux/amd64 only (fast check, nothing published);
+#     on main the image is also Trivy-scanned (fails on fixable CRITICAL CVEs)
 #   - "Run workflow" (workflow_dispatch): all six images, nothing published
 #   - release tag v*.*.*: all six images, published to GHCR as multi-arch tags
 #       :<version>-<variant>  :<major>.<minor>-<variant>  :<variant>  :latest (= cpu)
@@ -109,6 +110,55 @@ jobs:
       # still proves the CUDA image's Python stack, NeMo and the model work.
       - name: Smoke test with the real model
         run: scripts/smoke_test.sh asr:test
+
+      # Vulnerability gate on main (same policy as the Tems.AI platform scan):
+      # HIGH and CRITICAL, unfixed ones ignored; fails only on a fixable
+      # CRITICAL, HIGH findings are reported in the job summary + artifact.
+      - name: Install Trivy
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: aquasecurity/setup-trivy@v0.3.1
+        with:
+          version: v0.75.0
+          cache: true
+
+      - name: Trivy scan
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p trivy-reports
+          trivy image --severity HIGH,CRITICAL --ignore-unfixed --timeout 15m \
+            --format json --output trivy-reports/asr-cpu-amd64.json asr:test
+          trivy convert --format table trivy-reports/asr-cpu-amd64.json | tee trivy-reports/asr-cpu-amd64.txt
+          report=trivy-reports/asr-cpu-amd64.json
+          crit=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' "$report")
+          high=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH")] | length' "$report")
+          {
+            echo "## Trivy scan (cpu, linux/amd64)"
+            echo ""
+            echo "Severities: HIGH, CRITICAL (unfixed vulnerabilities ignored)."
+            echo ""
+            echo "| Critical | High |"
+            echo "|---:|---:|"
+            echo "| $crit | $high |"
+            echo ""
+            if [ "$high" -gt 0 ] || [ "$crit" -gt 0 ]; then
+              echo "| Severity | Package | Installed | Fixed | ID |"
+              echo "|---|---|---|---|---|"
+              jq -r '.Results[]?.Vulnerabilities[]? | "| \(.Severity) | \(.PkgName) | \(.InstalledVersion) | \(.FixedVersion) | \(.VulnerabilityID) |"' "$report"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$crit" -gt 0 ]; then
+            echo "::error::$crit fixable CRITICAL vulnerabilities — see the job summary and the trivy-report artifact"
+            exit 1
+          fi
+
+      - name: Upload Trivy report
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v7
+        with:
+          name: trivy-report
+          path: trivy-reports/
+          if-no-files-found: ignore
+          retention-days: 30
 
       - name: Log in to GHCR
         if: github.ref_type == 'tag'
