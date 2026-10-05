@@ -2,5 +2,8 @@
 !asr_server/
 !requirements/runtime.txt
 !requirements/overrides.txt
+!LICENSE
+!NOTICE
+!COMMERCIAL-LICENSE.md
 **/__pycache__
 **/*.pyc

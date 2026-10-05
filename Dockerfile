@@ -72,11 +72,16 @@ ARG TORCH_VARIANT=cpu
 ARG VERSION=dev
 ARG MODEL_REPO=nvidia/parakeet-tdt-0.6b-v3
 ARG MODEL_REVISION=7c35754d166cca382ad1e53e68b01e7c575f3a1d
+# Self-built images are Apache-2.0 only. Official release builds (docker.yml)
+# override both: see COMMERCIAL-LICENSE.md.
+ARG IMAGE_LICENSE=Apache-2.0
+ARG IMAGE_VENDOR=""
 
 LABEL org.opencontainers.image.title="temsai-asr-server" \
       org.opencontainers.image.description="OpenAI/Whisper-compatible speech-to-text server for NVIDIA Parakeet-TDT (${TORCH_VARIANT})" \
       org.opencontainers.image.source="https://github.com/tems-ai/temsai-asr-server" \
-      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.licenses="${IMAGE_LICENSE}" \
+      org.opencontainers.image.vendor="${IMAGE_VENDOR}" \
       org.opencontainers.image.version="${VERSION}"
 
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -107,6 +112,8 @@ RUN --mount=type=bind,from=builder,source=/usr/src/app/wheels,target=/wheels \
     && pip install --no-cache-dir --no-index --no-deps /overrides/* \
     && pip uninstall -y wandb jedi \
     && pip uninstall -y pip setuptools wheel
+
+COPY LICENSE NOTICE COMMERCIAL-LICENSE.md /licenses/
 
 WORKDIR /app
 COPY asr_server /app/asr_server

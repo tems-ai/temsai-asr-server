@@ -46,6 +46,12 @@ same constraints can use it:
 
 ## Quick start
 
+> **Licensing in one line:** the source code is Apache-2.0 and free for any use.
+> The official images below are free for evaluation and non-commercial use;
+> running them in production for a business needs a commercial license, sized
+> by the number of production hosts. Images you build yourself are always free.
+> See [License](#license).
+
 ```bash
 # CPU (amd64 or arm64). The first start downloads the model (~2.4 GB) into the volume.
 docker run -d --name asr -p 8000:8000 -v asr-models:/models ghcr.io/tems-ai/temsai-asr-server:cpu
@@ -87,7 +93,8 @@ The CUDA runtime ships inside the PyTorch wheels. The host only needs the
 driver and the NVIDIA Container Toolkit. Jetson (L4T) is not supported by these
 images. The CUDA images also run on CPU when no GPU is present (`DEVICE=auto`).
 
-Build an image yourself:
+Build an image yourself (free for any use, including commercial production,
+under Apache-2.0):
 
 ```bash
 docker build -t temsai-asr-server:cpu .
@@ -253,13 +260,43 @@ model:
 
 ## License
 
-The code is licensed under [Apache-2.0](LICENSE).
+**Source code: [Apache-2.0](LICENSE).** You can use, modify and redistribute the
+code, and run images you build from it, for any purpose, commercial included,
+free of charge.
 
-The model weights are **not** part of this repository and are downloaded from
-Hugging Face at runtime: `nvidia/parakeet-tdt-0.6b-v3` and `-v2` are licensed by
-NVIDIA under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). If you
-redistribute an image built with `BAKE_MODEL=true`, it contains those weights,
-so keep the attribution from [NOTICE](NOTICE).
+**Official images: [commercial license](COMMERCIAL-LICENSE.md).** The images
+Tems.AI publishes at `ghcr.io/tems-ai/temsai-asr-server`, from version 0.2.0 on:
+
+| Use | Official images | Images you build yourself |
+| --- | --- | --- |
+| Personal, non-commercial, education | Free | Free |
+| Evaluation, development, testing, CI, PoC | Free | Free |
+| Commercial production use | **Commercial license** | Free (Apache-2.0) |
+| Updates and support from Tems.AI | With a license | No |
+
+The commercial license is a subscription sized by the **maximum number of
+production hosts**: the nodes of each production Kubernetes cluster that runs
+the images (or only the dedicated node pool, if you pin the images to one), or
+the Docker hosts that run them. Details are in
+[COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md). For pricing and licenses, write
+to **support@tems.ai**.
+
+What the license pays for is the maintained build: six tested image variants
+(CPU, CUDA 12 and CUDA 13 on amd64 and arm64), pinned NeMo and PyTorch
+versions, vulnerability scanning and patched dependencies, and support. If you
+would rather maintain your own build, `docker build .` gives you the same
+server under Apache-2.0. Images released before 0.2.0 stay Apache-2.0.
+
+Third-party components keep their own licenses, listed in [NOTICE](NOTICE) and
+copied into every image under `/licenses`. The model weights are **not** part of
+this repository and are downloaded from Hugging Face at runtime:
+`nvidia/parakeet-tdt-0.6b-v3` and `-v2` are licensed by NVIDIA under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). If you redistribute
+an image built with `BAKE_MODEL=true`, it contains those weights, so keep the
+attribution from [NOTICE](NOTICE).
+
+"Tems.AI" is a trademark of Tems.AI. A self-built or modified image must not be
+presented as an official Tems.AI image.
 
 This project is not affiliated with or endorsed by NVIDIA. "NVIDIA" and
 "Parakeet" are used only to identify the models this server runs.
