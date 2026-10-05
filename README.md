@@ -43,6 +43,9 @@ same constraints can use it:
 - It **speaks the OpenAI API**, so existing Whisper clients and tools switch to
   a local engine by changing a base URL.
 
+Tems.AI is developed by TemsSoft B.V., which is certified to **ISO/IEC 27001**
+for information security management.
+
 
 ## Quick start
 
@@ -279,7 +282,8 @@ production hosts**: the nodes of each production Kubernetes cluster that runs
 the images (or only the dedicated node pool, if you pin the images to one), or
 the Docker hosts that run them. Details are in
 [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md). For pricing and licenses, write
-to **support@tems.ai**.
+to **support@tems.ai**. Licenses are granted by TemsSoft B.V., the ISO/IEC
+27001-certified company that develops Tems.AI.
 
 What the license pays for is the maintained build: six tested image variants
 (CPU, CUDA 12 and CUDA 13 on amd64 and arm64), pinned NeMo and PyTorch

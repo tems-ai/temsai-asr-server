@@ -3,6 +3,9 @@
 The source code of temsai-asr-server is, and stays, licensed under the
 [Apache License 2.0](LICENSE). This document does not change that.
 
+In this document, "Tems.AI" means TemsSoft B.V., the company that develops
+Tems.AI and grants the commercial licenses described here.
+
 It covers only the **Official Images**: the container images that Tems.AI
 builds and distributes, starting with version **0.2.0**. Images you build
 yourself from the source code are not covered by it.
@@ -95,6 +98,12 @@ image must not be presented as an Official Image or as provided by Tems.AI.
 Unless your commercial license agreement says otherwise, the Official Images
 are provided "AS IS", without warranties or conditions of any kind, as set out
 in sections 7 and 8 of the Apache License 2.0.
+
+## Security and compliance
+
+TemsSoft B.V. is certified to ISO/IEC 27001 for its information security
+management system. Certificate details are available to customers on request
+at support@tems.ai.
 
 ## Contact
 
