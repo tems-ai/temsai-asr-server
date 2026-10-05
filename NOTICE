@@ -1,13 +1,13 @@
 temsai-asr-server
-Copyright 2026 Tems.AI
+Copyright 2026 TemsSoft B.V.
 
-This product includes software developed at Tems.AI and is licensed under the
-Apache License, Version 2.0 (see LICENSE).
+This product includes software developed at TemsSoft B.V. (Tems.AI) and is
+licensed under the Apache License, Version 2.0 (see LICENSE).
 
-Container images built and distributed by Tems.AI (version 0.2.0 and later) are
-additionally subject to COMMERCIAL-LICENSE.md, which applies only to Tems.AI's
-own components and the image as a whole, not to the third-party components
-below. Images you build yourself from the source are Apache-2.0 only.
+Container images built and distributed by TemsSoft B.V. (version 0.2.0 and
+later) are additionally subject to COMMERCIAL-LICENSE.md, which applies only to
+TemsSoft B.V.'s own components and the image as a whole, not to the third-party
+components below. Images you build yourself from the source are Apache-2.0 only.
 
 Third-party components used at runtime (not included in this repository):
 

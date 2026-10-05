@@ -299,7 +299,7 @@ this repository and are downloaded from Hugging Face at runtime:
 an image built with `BAKE_MODEL=true`, it contains those weights, so keep the
 attribution from [NOTICE](NOTICE).
 
-"Tems.AI" is a trademark of Tems.AI. A self-built or modified image must not be
+"Tems.AI" is a trademark of TemsSoft B.V. A self-built or modified image must not be
 presented as an official Tems.AI image.
 
 This project is not affiliated with or endorsed by NVIDIA. "NVIDIA" and
