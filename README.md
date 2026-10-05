@@ -242,9 +242,14 @@ scripts/smoke_test.sh temsai-asr-server:cpu
 ```
 
 CI (`.github/workflows/`) runs lint, unit tests, Helm/manifest validation and
-hadolint on every PR. It builds all six image variants on native amd64 and
-arm64 runners and smoke-tests each one with the real model before publishing
-multi-arch manifests to GHCR.
+hadolint on every push and PR. Image builds are smoke-tested with the real
+model:
+
+- pushes to `main` and PRs that touch the image build only the CPU `linux/amd64`
+  image and publish nothing;
+- a release tag `vX.Y.Z` builds all six variants on native amd64 and arm64
+  runners and publishes multi-arch manifests to GHCR;
+- **Run workflow** (manual) builds all six without publishing.
 
 ## License
 

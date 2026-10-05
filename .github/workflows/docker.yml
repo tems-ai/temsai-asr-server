@@ -1,6 +1,10 @@
-# Builds every variant natively on amd64 and arm64 runners (no QEMU), smoke-tests
-# each image with the real model, then publishes multi-arch manifests to GHCR:
-#   :cpu  :cuda12  :cuda13  (+ :<version>-<variant> on tags, :latest = cpu)
+# Image builds, natively on amd64 and arm64 runners (no QEMU); every image is
+# smoke-tested with the real model before anything is pushed.
+#   - push to main / pull request: CPU linux/amd64 only (fast check, nothing published)
+#   - "Run workflow" (workflow_dispatch): all six images, nothing published
+#   - release tag v*.*.*: all six images, published to GHCR as multi-arch tags
+#       :<version>-<variant>  :<major>.<minor>-<variant>  :<variant>  :latest (= cpu)
+#     with <variant> = cpu | cuda12 | cuda13
 name: Docker
 
 # Only changes that affect the image trigger a build (docs, chart and test-only
@@ -40,17 +44,39 @@ env:
   IMAGE: ghcr.io/${{ github.repository }}
 
 jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      variants: ${{ steps.matrix.outputs.variants }}
+      platforms: ${{ steps.matrix.outputs.platforms }}
+      tags: ${{ steps.matrix.outputs.tags }}
+    steps:
+      - id: matrix
+        env:
+          FULL: ${{ github.ref_type == 'tag' || github.event_name == 'workflow_dispatch' }}
+        run: |
+          if [ "$FULL" = "true" ]; then
+            variants='[{"torch":"cpu","tag":"cpu"},{"torch":"cu126","tag":"cuda12"},{"torch":"cu130","tag":"cuda13"}]'
+            platforms='[{"name":"linux/amd64","runner":"ubuntu-24.04","slug":"amd64"},{"name":"linux/arm64","runner":"ubuntu-24.04-arm","slug":"arm64"}]'
+          else
+            variants='[{"torch":"cpu","tag":"cpu"}]'
+            platforms='[{"name":"linux/amd64","runner":"ubuntu-24.04","slug":"amd64"}]'
+          fi
+          {
+            echo "variants=$variants"
+            echo "platforms=$platforms"
+            echo "tags=$(jq -c 'map(.tag)' <<< "$variants")"
+          } >> "$GITHUB_OUTPUT"
+          echo "variants: $variants"
+          echo "platforms: $platforms"
+
   build:
+    needs: plan
     strategy:
       fail-fast: false
       matrix:
-        variant:
-          - { torch: cpu, tag: cpu }
-          - { torch: cu126, tag: cuda12 }
-          - { torch: cu130, tag: cuda13 }
-        platform:
-          - { name: linux/amd64, runner: ubuntu-24.04, slug: amd64 }
-          - { name: linux/arm64, runner: ubuntu-24.04-arm, slug: arm64 }
+        variant: ${{ fromJSON(needs.plan.outputs.variants) }}
+        platform: ${{ fromJSON(needs.plan.outputs.platforms) }}
     runs-on: ${{ matrix.platform.runner }}
     permissions:
       contents: read
@@ -85,7 +111,7 @@ jobs:
         run: scripts/smoke_test.sh asr:test
 
       - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
+        if: github.ref_type == 'tag'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -93,7 +119,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push by digest
-        if: github.event_name != 'pull_request'
+        if: github.ref_type == 'tag'
         id: push
         uses: docker/build-push-action@v7
         with:
@@ -106,14 +132,14 @@ jobs:
           outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
-        if: github.event_name != 'pull_request'
+        if: github.ref_type == 'tag'
         run: |
           mkdir -p /tmp/digests
           digest="${{ steps.push.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
 
       - uses: actions/upload-artifact@v7
-        if: github.event_name != 'pull_request'
+        if: github.ref_type == 'tag'
         with:
           name: digests-${{ matrix.variant.tag }}-${{ matrix.platform.slug }}
           path: /tmp/digests/*
@@ -121,15 +147,15 @@ jobs:
           retention-days: 1
 
   publish:
-    if: github.event_name != 'pull_request'
-    needs: build
+    if: github.ref_type == 'tag'
+    needs: [plan, build]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
     strategy:
       matrix:
-        variant: [cpu, cuda12, cuda13]
+        variant: ${{ fromJSON(needs.plan.outputs.tags) }}
     steps:
       - uses: actions/download-artifact@v8
         with:
@@ -150,7 +176,6 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}-${{ matrix.variant }}
             type=raw,value=${{ matrix.variant }},enable=${{ github.ref_type == 'tag' }}
             type=raw,value=latest,enable=${{ github.ref_type == 'tag' && matrix.variant == 'cpu' }}
-            type=raw,value=edge-${{ matrix.variant }},enable={{is_default_branch}}
 
       - uses: docker/login-action@v4
         with:
