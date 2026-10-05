@@ -6,9 +6,10 @@ The source code of temsai-asr-server is, and stays, licensed under the
 In this document, "Tems.AI" means TemsSoft B.V., the company that develops
 Tems.AI and grants the commercial licenses described here.
 
-It covers only the **Official Images**: the container images that Tems.AI
-builds and distributes, starting with version **0.2.0**. Images you build
-yourself from the source code are not covered by it.
+It covers the **Official Images**, the container images that Tems.AI builds
+and distributes starting with version **0.2.0**, and every **Derived Image**
+made from them. Images you build yourself from the source code are not covered
+by it.
 
 ## 1. Definitions
 
@@ -18,8 +19,13 @@ yourself from the source code are not covered by it.
   label `org.opencontainers.image.vendor="Tems.AI"` and an
   `org.opencontainers.image.licenses` value that includes
   `LicenseRef-TemsAI-Commercial`.
+- **Derived Images**: images that contain an Official Image or any of its
+  layers, for example images built `FROM` an Official Image, and copies of an
+  Official Image that are modified, re-tagged, mirrored, exported or
+  re-packaged.
 - **Self-built Images**: images you build yourself from the source code in this
-  repository or a fork of it, for example with `docker build .`.
+  repository or a fork of it, for example with `docker build .`, without
+  using any Official Image or its layers.
 - **Commercial Use**: any use by or for a company, government body or other
   organisation in production, or to process data as part of its business,
   including providing services to third parties. Evaluation, development,
@@ -66,37 +72,65 @@ during the subscription term:
 If you exceed the licensed number, tell us at support@tems.ai and we will
 adjust the license for the rest of the term.
 
-## 5. Self-built Images
+## 5. Derived Images and redistribution
+
+Derived Images are covered by this license in the same way as the Official
+Images they are made from: sections 2 to 4 apply to them, including the
+commercial license requirement for Commercial Use.
+
+You may store Official and Derived Images in your own private registries for
+your own use. If you make a Derived Image available to the public or to third
+parties (for example on Docker Hub, a public registry or a download page):
+
+- it must be distributed under this Commercial License, and stated as such;
+- the labels `org.opencontainers.image.vendor` and
+  `org.opencontainers.image.licenses` and the `/licenses` directory from the
+  Official Image must be kept unchanged;
+- you may not grant its recipients any rights beyond those in this document,
+  and Commercial Use by them requires their own commercial license from
+  Tems.AI.
+
+Redistributing an unmodified Official Image is subject to the same conditions.
+
+## 6. Self-built Images
 
 Images you build yourself from the source code are licensed under the Apache
 License 2.0 only, and this document does not apply to them. You may use them
-for any purpose, including Commercial Use, free of charge. Tems.AI does not
-provide support or updates for them.
+for any purpose, including Commercial Use, free of charge, and you may
+redistribute them under the Apache License 2.0. Tems.AI does not provide
+support or updates for them.
+
+If you make a Self-built Image available to the public, section 8 applies: it
+must not use the Tems.AI name in its image name, tags or vendor label, so that
+it cannot be confused with an Official Image.
 
 Images published by Tems.AI before version 0.2.0 were released under the
 Apache License 2.0 and remain under it.
 
-## 6. Third-party components
+## 7. Third-party components
 
 The Official Images contain third-party software and model weights that are
 licensed under their own terms, listed in [NOTICE](NOTICE) and shipped in each
 image under `/licenses`, among them FFmpeg (GPL/LGPL), PyTorch (BSD-3-Clause),
 NVIDIA NeMo (Apache-2.0) and, in images with the model built in, the NVIDIA
 Parakeet-TDT weights (CC BY 4.0). This license applies only to the components
-created by Tems.AI and to the Official Images as a compiled whole. It does not
+created by Tems.AI and to the Official and Derived Images as compiled wholes. It does not
 restrict any right you have to a third-party component under its own license.
 
-## 7. Trademarks
+## 8. Trademarks
 
 "Tems.AI" and the Tems.AI logo are trademarks of Tems.AI. Neither the Apache
 License 2.0 nor this document grants permission to use them. You may refer to
-the project by name to describe it truthfully, but a Self-built or modified
-image must not be presented as an Official Image or as provided by Tems.AI.
+the project by name to describe it truthfully ("built from the
+temsai-asr-server source code"), but a Self-built or modified image must not be
+presented as an Official Image or as provided by Tems.AI. Publicly distributed
+Self-built Images must not use "Tems.AI", "TemsAI" or "temsai" in their image
+name, tags or `org.opencontainers.image.vendor` label.
 
-## 8. No warranty
+## 9. No warranty
 
-Unless your commercial license agreement says otherwise, the Official Images
-are provided "AS IS", without warranties or conditions of any kind, as set out
+Unless your commercial license agreement says otherwise, the Official and
+Derived Images are provided "AS IS", without warranties or conditions of any kind, as set out
 in sections 7 and 8 of the Apache License 2.0.
 
 ## Security and compliance

@@ -299,8 +299,13 @@ this repository and are downloaded from Hugging Face at runtime:
 an image built with `BAKE_MODEL=true`, it contains those weights, so keep the
 attribution from [NOTICE](NOTICE).
 
-"Tems.AI" is a trademark of TemsSoft B.V. A self-built or modified image must not be
-presented as an official Tems.AI image.
+Images derived from the official images (built `FROM` them, or modified,
+mirrored or re-tagged copies) stay under the commercial license, and if you
+publish one it must be distributed under that license too. Images you build
+yourself from source are Apache-2.0 and may be published, but not under the
+Tems.AI name: "Tems.AI" is a trademark of TemsSoft B.V., and a public
+self-built image must not use "Tems.AI", "TemsAI" or "temsai" in its image name,
+tags or vendor label.
 
 This project is not affiliated with or endorsed by NVIDIA. "NVIDIA" and
 "Parakeet" are used only to identify the models this server runs.
