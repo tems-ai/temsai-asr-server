@@ -16,7 +16,33 @@ CPU or NVIDIA GPU, on `amd64` and `arm64`.
 - Images for CPU, CUDA 12 and CUDA 13 on `linux/amd64` and `linux/arm64`, plus
   Docker Compose files, a Helm chart and plain Kubernetes manifests.
 
-Developed by Tems.AI for transcribing frontline manufacturing videos.
+## Why we open-sourced it
+
+[Tems.AI](https://tems.ai) turns frontline manufacturing know-how into digital
+guides, and much of that knowledge arrives as video recorded on the shop floor.
+Two problems kept coming up with our industrial customers:
+
+- **Sovereignty.** Many plants cannot send audio from their production floor to
+  a third-party cloud API. Recordings show proprietary processes, the network
+  is often isolated, and data must stay on site or in-country. They need a
+  speech-to-text engine they can run themselves, on their own hardware, with
+  no outbound calls at inference time.
+- **Noise.** Factory audio is hard: motors, conveyors, compressors and HVAC sit
+  right on top of the speech. General-purpose ASR servers transcribe whatever
+  arrives and leave noise handling to the caller.
+
+This server is our answer to both, and we publish it so that anyone with the
+same constraints can use it:
+
+- It runs **fully on premises**: CPU or GPU, x86 or ARM, Docker or Kubernetes,
+  including air-gapped clusters (`BAKE_MODEL=true` puts the model in the image).
+- It is **built for industrial environments**: an embedded denoise front-end
+  (high-pass filter + adaptive spectral gating, tuned on real factory
+  recordings) runs before recognition. On a ground-truth factory clip it cut
+  the word error rate from 48% to 32%, with no extra service to deploy.
+- It **speaks the OpenAI API**, so existing Whisper clients and tools switch to
+  a local engine by changing a base URL.
+
 
 ## Quick start
 
