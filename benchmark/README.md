@@ -8,6 +8,18 @@ Compares ASR engines by word error rate on one recording at several noise levels
 - `noise_benchmark.py`: mixes the noise in at the requested SNRs and scores each engine through the
   OpenAI `/v1/audio/transcriptions` API (or local openai-whisper).
 
+The WAVs are not committed (the repo ignores `*.wav`); recreate them with:
+
+```bash
+espeak-ng -v en-us -s 190 -w /tmp/tts.wav -f benchmark/extinguisher.txt
+ffmpeg -y -i /tmp/tts.wav -ar 16000 -ac 1 benchmark/extinguisher.wav
+ffmpeg -y -f lavfi -i "sine=f=50:d=60" -f lavfi -i "sine=f=100:d=60" -f lavfi -i "sine=f=150:d=60" \
+  -f lavfi -i "anoisesrc=c=brown:d=60:a=0.5" -f lavfi -i "anoisesrc=c=pink:d=60:a=0.2" \
+  -filter_complex "amix=inputs=5:weights=1 0.6 0.4 1.5 1,tremolo=f=6:d=0.3" -ar 16000 -ac 1 benchmark/machine_noise.wav
+```
+
+Then run the comparison:
+
 ```bash
 docker run -d -p 8000:8000 -v asr-models:/models ghcr.io/tems-ai/temsai-asr-server:cpu
 pip install jiwer numpy soundfile openai openai-whisper
