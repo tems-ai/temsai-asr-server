@@ -1,0 +1,9 @@
+# Runtime dependencies. torch is NOT listed here: the Dockerfile installs the
+# CPU or CUDA wheel first (TORCH_INDEX_URL build arg), and pip then sees it as
+# already satisfied when nemo_toolkit asks for it.
+nemo_toolkit[asr]==3.0.0
+fastapi==0.142.2
+uvicorn==0.54.0
+python-multipart==0.0.32
+py3langid==0.4.0
+noisereduce==3.0.3

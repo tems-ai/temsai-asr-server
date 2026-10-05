@@ -1,0 +1,11 @@
+apiVersion: v2
+name: temsai-asr-server
+description: OpenAI/Whisper-compatible speech-to-text server for NVIDIA Parakeet-TDT models (CPU or GPU)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+license: Apache-2.0
+home: https://github.com/tems-ai/temsai-asr-server
+sources:
+  - https://github.com/tems-ai/temsai-asr-server
+keywords: [asr, speech-to-text, transcription, whisper, parakeet, nemo, nvidia]

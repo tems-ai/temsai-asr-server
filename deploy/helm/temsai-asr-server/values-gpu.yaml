@@ -1,0 +1,20 @@
+# NVIDIA GPU overlay. cuda12 = CUDA 12.6 (driver >= 560); cuda13 = CUDA 13.0
+# (driver >= 580, required for Blackwell).
+image:
+  variant: cuda12
+gpu:
+  enabled: true
+  count: 1
+config:
+  device: cuda
+resources:
+  requests:
+    cpu: "1"
+    memory: 6Gi
+  limits:
+    cpu: "4"
+    memory: 10Gi
+tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule

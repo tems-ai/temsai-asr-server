@@ -1,0 +1,22 @@
+temsai-asr-server
+Copyright 2026 Tems.AI
+
+This product includes software developed at Tems.AI and is licensed under the
+Apache License, Version 2.0 (see LICENSE).
+
+Third-party components used at runtime (not included in this repository):
+
+- NVIDIA NeMo (https://github.com/NVIDIA/NeMo), Apache License 2.0.
+- PyTorch (https://pytorch.org), BSD-3-Clause License.
+- FFmpeg static builds from mwader/static-ffmpeg, GPL/LGPL; shipped in the
+  container images as separate executables.
+
+Model weights (downloaded at runtime, or baked into images built with
+BAKE_MODEL=true):
+
+- nvidia/parakeet-tdt-0.6b-v3 and nvidia/parakeet-tdt-0.6b-v2
+  Copyright NVIDIA Corporation. Licensed under the Creative Commons Attribution
+  4.0 International License (CC BY 4.0):
+  https://creativecommons.org/licenses/by/4.0/
+  Source: https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3
+          https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2

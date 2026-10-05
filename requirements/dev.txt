@@ -1,0 +1,12 @@
+# Lightweight test/lint environment: everything except torch/NeMo, which the
+# unit tests stub out. Real-model checks run in the Docker smoke test.
+fastapi==0.142.2
+uvicorn==0.54.0
+python-multipart==0.0.32
+py3langid==0.4.0
+noisereduce==3.0.3
+huggingface_hub>=0.30
+omegaconf>=2.3
+httpx>=0.28
+pytest>=8.3
+ruff==0.15.0

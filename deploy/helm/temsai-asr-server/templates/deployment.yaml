@@ -1,0 +1,148 @@
+{{- if and .Values.persistence.enabled (eq .Values.persistence.accessMode "ReadWriteOnce") (gt (int .Values.replicaCount) 1) }}
+{{- fail "persistence.accessMode=ReadWriteOnce supports one replica; use ReadWriteMany or disable persistence for replicaCount > 1" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "asr.fullname" . }}
+  labels:
+    {{- include "asr.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: 3
+  strategy:
+    {{- if and .Values.persistence.enabled (eq .Values.persistence.accessMode "ReadWriteOnce") }}
+    # An RWO volume cannot attach to the old and new pod at once, and a
+    # surge would briefly need memory for two loaded models.
+    type: Recreate
+    {{- else }}
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    {{- end }}
+  selector:
+    matchLabels:
+      {{- include "asr.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- if and .Values.apiKey.value (not .Values.apiKey.existingSecret) }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "asr.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.runtimeClassName }}
+      runtimeClassName: {{ . }}
+      {{- end }}
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: asr
+          image: {{ include "asr.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            - name: MODEL_REPO
+              value: {{ .Values.config.modelRepo | quote }}
+            - name: MODEL_REVISION
+              value: {{ .Values.config.modelRevision | quote }}
+            - name: ENGLISH_MODEL_ENABLED
+              value: {{ .Values.config.englishModelEnabled | quote }}
+            - name: DEVICE
+              value: {{ .Values.config.device | quote }}
+            - name: DENOISE_ENABLED
+              value: {{ .Values.config.denoiseEnabled | quote }}
+            - name: MAX_UPLOAD_BYTES
+              value: {{ .Values.config.maxUploadBytes | int64 | quote }}
+            - name: MAX_AUDIO_SECONDS
+              value: {{ .Values.config.maxAudioSeconds | int | quote }}
+            - name: LONG_AUDIO_SECONDS
+              value: {{ .Values.config.longAudioSeconds | int | quote }}
+            - name: TORCH_NUM_THREADS
+              {{- if .Values.config.torchNumThreads }}
+              value: {{ .Values.config.torchNumThreads | quote }}
+              {{- else }}
+              valueFrom:
+                resourceFieldRef:
+                  containerName: asr
+                  resource: limits.cpu
+              {{- end }}
+            - name: LOG_LEVEL
+              value: {{ .Values.config.logLevel | quote }}
+            {{- if include "asr.apiKeyEnabled" . }}
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "asr.apiKeySecretName" . }}
+                  key: {{ .Values.apiKey.existingSecretKey }}
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- $resources := deepCopy .Values.resources }}
+            {{- if .Values.gpu.enabled }}
+            {{- $limits := default dict $resources.limits }}
+            {{- $_ := set $limits .Values.gpu.resourceName (.Values.gpu.count | int) }}
+            {{- $_ := set $resources "limits" $limits }}
+            {{- end }}
+            {{- toYaml $resources | nindent 12 }}
+          volumeMounts:
+            - name: models
+              mountPath: /models
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: models
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-models" (include "asr.fullname" .)) }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: tmp
+          # Uploads and decoded WAVs live here for the duration of a request.
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

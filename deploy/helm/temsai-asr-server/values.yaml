@@ -1,0 +1,132 @@
+# Default: CPU image. For NVIDIA GPUs see values-gpu.yaml
+#   helm install asr ./deploy/helm/temsai-asr-server -f ./deploy/helm/temsai-asr-server/values-gpu.yaml
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/tems-ai/temsai-asr-server
+  # Tag = "<appVersion>-<variant>" unless set explicitly.
+  tag: ""
+  # cpu | cuda12 | cuda13
+  variant: cpu
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# GPU scheduling. Requires the NVIDIA device plugin / GPU Operator in the cluster.
+gpu:
+  enabled: false
+  count: 1
+  # Resource name exposed by the device plugin.
+  resourceName: nvidia.com/gpu
+
+# e.g. "nvidia" when the cluster uses a dedicated RuntimeClass for GPU pods.
+runtimeClassName: ""
+
+# Environment for the server (see README "Configuration").
+config:
+  modelRepo: nvidia/parakeet-tdt-0.6b-v3
+  modelRevision: 7c35754d166cca382ad1e53e68b01e7c575f3a1d
+  englishModelEnabled: false
+  # auto | cpu | cuda
+  device: auto
+  denoiseEnabled: true
+  maxUploadBytes: 209715200
+  # 0 = unlimited. Each minute of audio costs ~0.45 GB RAM on CPU; size limits together.
+  maxAudioSeconds: 0
+  longAudioSeconds: 180
+  # Defaults to the container's CPU limit when empty.
+  torchNumThreads: ""
+  logLevel: INFO
+
+# Bearer token clients must send. Either set a value (a Secret is created) or
+# point at an existing Secret. Empty both = no authentication.
+apiKey:
+  value: ""
+  existingSecret: ""
+  existingSecretKey: api-key
+
+extraEnv: []
+
+# Model cache. With persistence disabled every pod start re-downloads ~2.4 GB
+# (unless the image was built with BAKE_MODEL=true).
+persistence:
+  enabled: true
+  storageClass: ""
+  # ReadWriteOnce allows one pod; use ReadWriteMany (e.g. EFS/NFS) for replicaCount > 1.
+  accessMode: ReadWriteOnce
+  size: 8Gi
+  existingClaim: ""
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # Large uploads and long inference:
+    # nginx.ingress.kubernetes.io/proxy-body-size: "200m"
+    # nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+  hosts:
+    - host: asr.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Measured on CPU: ~6-7 GiB while the checkpoint loads; each minute of audio in
+# one request adds ~0.45 GiB. The English model roughly doubles the base.
+resources:
+  requests:
+    cpu: "1"
+    memory: 7Gi
+  limits:
+    cpu: "4"
+    memory: 10Gi
+
+podAnnotations: {}
+podLabels: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+
+# Model load takes ~1 min on CPU after the first-boot download (~2.4 GB).
+startupProbe:
+  httpGet:
+    path: /health
+    port: http
+  periodSeconds: 10
+  failureThreshold: 90
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  periodSeconds: 10
+  timeoutSeconds: 5
+
+# Inference is serialized per pod; one long request delays the next.
+terminationGracePeriodSeconds: 120

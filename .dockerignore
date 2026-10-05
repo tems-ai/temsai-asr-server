@@ -1,0 +1,5 @@
+*
+!asr_server/
+!requirements/runtime.txt
+**/__pycache__
+**/*.pyc

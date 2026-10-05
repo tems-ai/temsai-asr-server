@@ -1,0 +1,234 @@
+# temsai-asr-server
+
+A self-hosted speech-to-text server for **NVIDIA Parakeet-TDT** models with an
+**OpenAI/Whisper-compatible API**. Point any Whisper client at it. It runs on
+CPU or NVIDIA GPU, on `amd64` and `arm64`.
+
+- `POST /v1/audio/transcriptions`: same request and response shapes as OpenAI's
+  endpoint (`json`, `verbose_json`, `text`, `srt`, `vtt`).
+- Per-word timestamps and **per-word confidence** in `verbose_json`.
+- 25 European languages with automatic language detection (`parakeet-tdt-0.6b-v3`).
+  An optional English-only model (`v2`) can be routed for `language=en`.
+- Long audio: switches the encoder to local attention above a threshold, so a
+  10-minute file fits in memory on CPU.
+- Optional DSP noise reduction tuned for noisy, machine-heavy environments.
+- Optional Bearer-token auth, upload and duration limits.
+- Images for CPU, CUDA 12 and CUDA 13 on `linux/amd64` and `linux/arm64`, plus
+  Docker Compose files, a Helm chart and plain Kubernetes manifests.
+
+Developed by Tems.AI for transcribing frontline manufacturing videos.
+
+## Quick start
+
+```bash
+# CPU (amd64 or arm64). The first start downloads the model (~2.4 GB) into the volume.
+docker run -d --name asr -p 8000:8000 -v asr-models:/models ghcr.io/tems-ai/temsai-asr-server:cpu
+
+# NVIDIA GPU (needs the NVIDIA Container Toolkit)
+docker run -d --name asr --gpus all -p 8000:8000 -v asr-models:/models ghcr.io/tems-ai/temsai-asr-server:cuda12
+
+curl http://localhost:8000/health          # {"status":"ok","model_loaded":true} once loaded (~1 min on CPU)
+curl http://localhost:8000/v1/audio/transcriptions -F file=@meeting.mp3
+```
+
+Any container format ffmpeg can read works: wav, mp3, m4a, flac, ogg, and video
+files such as mp4 or mov. Audio is extracted automatically.
+
+### With the OpenAI SDK
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8000/v1", api_key="unused-or-your-API_KEY")
+with open("meeting.mp3", "rb") as f:
+    result = client.audio.transcriptions.create(
+        model="nvidia/parakeet-tdt-0.6b-v3",  # any value is accepted, e.g. "whisper-1"
+        file=f,
+        response_format="verbose_json",
+    )
+print(result.text)
+```
+
+## Image variants
+
+| Tag | PyTorch | Platforms | Host requirements |
+| --- | --- | --- | --- |
+| `cpu`, `latest`, `<version>-cpu` | CPU | amd64, arm64 | none |
+| `cuda12`, `<version>-cuda12` | CUDA 12.6 | amd64, arm64 (SBSA, e.g. Grace Hopper) | NVIDIA driver ≥ 560 |
+| `cuda13`, `<version>-cuda13` | CUDA 13.0 | amd64, arm64 (SBSA, e.g. Grace Blackwell) | NVIDIA driver ≥ 580; **required for Blackwell GPUs** |
+
+The CUDA runtime ships inside the PyTorch wheels. The host only needs the
+driver and the NVIDIA Container Toolkit. Jetson (L4T) is not supported by these
+images. The CUDA images also run on CPU when no GPU is present (`DEVICE=auto`).
+
+Build an image yourself:
+
+```bash
+docker build -t temsai-asr-server:cpu .
+docker build --build-arg TORCH_VARIANT=cu126 -t temsai-asr-server:cuda12 .
+docker build --build-arg TORCH_VARIANT=cu130 -t temsai-asr-server:cuda13 .
+docker buildx build --platform linux/arm64 -t temsai-asr-server:cpu-arm64 .
+# Air-gapped clusters: bake the default checkpoint into the image (+2.4 GB)
+docker build --build-arg BAKE_MODEL=true -t temsai-asr-server:cpu-offline .
+```
+
+Behind a registry mirror, override the base images with
+`--build-arg BASE_IMAGE=... --build-arg FFMPEG_IMAGE=...`.
+
+## Deployment
+
+### Docker Compose
+
+```bash
+docker compose up -d                                         # CPU
+docker compose -f compose.yaml -f compose.gpu.yaml up -d     # NVIDIA GPU
+API_KEY=change-me docker compose up -d                       # with auth
+```
+
+### Kubernetes (Helm)
+
+```bash
+helm install asr ./deploy/helm/temsai-asr-server                          # CPU
+helm install asr ./deploy/helm/temsai-asr-server \
+  -f ./deploy/helm/temsai-asr-server/values-gpu.yaml                      # GPU (NVIDIA device plugin required)
+helm install asr ./deploy/helm/temsai-asr-server --set apiKey.value=change-me
+```
+
+The chart creates a Deployment, a Service and a PVC for the model cache (kept on
+uninstall), plus an optional Ingress and Secret. See
+[`values.yaml`](deploy/helm/temsai-asr-server/values.yaml) for every option.
+`TORCH_NUM_THREADS` follows the container CPU limit by default.
+
+### Kubernetes (plain manifests)
+
+```bash
+kubectl create namespace asr
+kubectl apply -n asr -f deploy/kubernetes/cpu.yaml   # or gpu.yaml
+```
+
+These files are rendered from the chart with default values by
+`scripts/render-manifests.sh`.
+
+## API
+
+### `POST /v1/audio/transcriptions`
+
+`multipart/form-data` fields:
+
+| Field | Default | Notes |
+| --- | --- | --- |
+| `file` | required | Audio or video, up to `MAX_UPLOAD_BYTES`. |
+| `model` | | Optional. Selects the English model when it matches its id; any other value (e.g. `whisper-1`) uses the default model. |
+| `language` | | ISO-639-1 code. Not needed for recognition: the model detects the language itself. When set, it is echoed in the response, and `en` routes to the English model if enabled. When absent, the response's `language` is detected from the text (py3langid, restricted to the 25 supported languages). |
+| `prompt` | | Accepted for compatibility and ignored: Parakeet has no prompt biasing. |
+| `response_format` | `json` | `json` → `{"text"}`; `verbose_json` → text, language, duration, words, segments; `text`, `srt`, `vtt` → plain text. |
+
+Other OpenAI fields such as `temperature` and `timestamp_granularities[]` are
+accepted and ignored. `verbose_json` always contains both words and segments.
+
+Errors: `400` (undecodable or empty audio, bad `response_format`), `401`
+(missing or wrong API key), `413` (over `MAX_UPLOAD_BYTES` or
+`MAX_AUDIO_SECONDS`), `415` (non-audio/video content type), `422` (no `file`).
+
+Example `verbose_json`:
+
+```json
+{
+  "task": "transcribe",
+  "text": "He hoped there would be stew for dinner, …",
+  "language": "en",
+  "duration": 10.435,
+  "words": [{"word": "He", "start": 0.32, "end": 0.48, "probability": 0.93}, …],
+  "segments": [{"id": 0, "start": 0.32, "end": 10.24, "text": "He hoped …", "avg_logprob": -0.21}]
+}
+```
+
+### Confidence semantics
+
+- `words[].probability`: NeMo per-word confidence (entropy-based, Tsallis
+  α=0.33, exp-normalized, blank-excluded, min-aggregated over tokens), in [0, 1].
+- `segments[].avg_logprob`: the mean of `ln(probability)` over the segment's
+  words. It has the same shape as Whisper's (≤ 0, closer to 0 is better) but
+  it is **a different estimator**, so never compare the numbers across engines.
+- If NeMo returns unusable word confidences, `probability` is omitted and
+  `avg_logprob` falls back to the length-normalized hypothesis score.
+- `no_speech_prob` is **omitted**: Parakeet has no no-speech head. Empty text
+  is the no-speech signal. The server never fabricates a value.
+
+### Other endpoints
+
+- `GET /health`: `200 {"status":"ok","model_loaded":true}` when ready, `503`
+  while loading. Never requires auth.
+- `GET /v1/models`: the loaded model ids, in OpenAI's list format.
+
+## Configuration
+
+All settings are environment variables. Invalid values stop the server at
+startup with a clear error.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `MODEL_REPO` | `nvidia/parakeet-tdt-0.6b-v3` | Hugging Face repo of the default `.nemo` checkpoint. |
+| `MODEL_REVISION` | pinned commit | Required when `MODEL_REPO` is changed. Downloads are always pinned to a revision. |
+| `MODEL_PATH` | `$MODEL_DIR/<repo-name>.nemo` | Use a local checkpoint file instead. |
+| `MODEL_ID` | `MODEL_REPO` | Id reported by `/v1/models`. |
+| `MODEL_DIR` | `/models` | Download/cache directory. Mount a volume here. |
+| `ENGLISH_MODEL_ENABLED` | `false` | Also load `nvidia/parakeet-tdt-0.6b-v2` and route `language=en` to it. On noisy English audio it halved WER compared with v3 (48% → 24%) in our tests. Costs about 3 GB more RAM. `ENGLISH_MODEL_REPO`, `_REVISION`, `_PATH` and `_ID` work like the `MODEL_*` variables. |
+| `DEVICE` | `auto` | `auto`, `cpu` or `cuda`. With `cuda`, startup fails if no GPU is visible. |
+| `TORCH_NUM_THREADS` | torch default | CPU threads used for inference. |
+| `DENOISE_ENABLED` | `true` | Applies an 80 Hz high-pass filter, non-stationary spectral gating and peak normalization before the multilingual model. Never applied to the English model, where it hurt accuracy. |
+| `LONG_AUDIO_SECONDS` | `180` | Above this duration the encoder uses local attention (256/256 context). `0` keeps full attention always. |
+| `MAX_AUDIO_SECONDS` | `0` (unlimited) | Rejects longer audio with `413` before inference. |
+| `MAX_UPLOAD_BYTES` | `209715200` (200 MB) | Upload size limit. |
+| `API_KEY` | empty | When set, `/v1/*` requires `Authorization: Bearer <API_KEY>`. |
+| `LOG_LEVEL` | `INFO` | Server log level. |
+| `NEMO_LOG_LEVEL` | `ERROR` | NeMo's log level after the model has loaded. NeMo repeats warnings on every request otherwise. |
+
+## Sizing
+
+Measured on CPU (4 threads, x86_64) with `parakeet-tdt-0.6b-v3`:
+
+| | |
+| --- | --- |
+| Model load | ~60 s; peak RSS ~6–7 GB, resident ~6 GB |
+| 10 s of speech | ~1 s (RTFx ≈ 10) |
+| 130 s / 300 s / 611 s audio (local attention) | 11 s / 24 s / 47 s |
+| Extra memory per request | ~0.45 GB per minute of audio (≈ 10 GB peak for a 10-min file) |
+
+Measured with full attention, for comparison: 300 s of audio took 58 s, peaked at
+9.3 GB and dropped words, and 611 s ran out of memory on a 15 GB host. Local
+attention handled all of these lengths, which is why the default threshold is
+180 s.
+
+Inference is serialized within a container: one request runs at a time and
+others queue. Scale throughput with replicas. Use `MAX_AUDIO_SECONDS` together
+with the memory limit, or split very long recordings on the client side.
+
+## Development
+
+```bash
+python -m venv .venv && . .venv/bin/activate
+pip install -r requirements/dev.txt   # no torch/NeMo needed: unit tests stub them
+ruff check . && ruff format --check . && pytest
+
+# End-to-end with the real model (builds nothing, uses an existing image):
+scripts/smoke_test.sh temsai-asr-server:cpu
+```
+
+CI (`.github/workflows/`) runs lint, unit tests, Helm/manifest validation and
+hadolint on every PR. It builds all six image variants on native amd64 and
+arm64 runners and smoke-tests each one with the real model before publishing
+multi-arch manifests to GHCR.
+
+## License
+
+The code is licensed under [Apache-2.0](LICENSE).
+
+The model weights are **not** part of this repository and are downloaded from
+Hugging Face at runtime: `nvidia/parakeet-tdt-0.6b-v3` and `-v2` are licensed by
+NVIDIA under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). If you
+redistribute an image built with `BAKE_MODEL=true`, it contains those weights,
+so keep the attribution from [NOTICE](NOTICE).
+
+This project is not affiliated with or endorsed by NVIDIA. "NVIDIA" and
+"Parakeet" are used only to identify the models this server runs.

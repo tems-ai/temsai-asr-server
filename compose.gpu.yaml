@@ -1,0 +1,18 @@
+# Overlay for NVIDIA GPUs. Requires the NVIDIA driver and the NVIDIA Container
+# Toolkit on the host. Use ASR_IMAGE_TAG=cuda13 (TORCH_VARIANT=cu130) for
+# Blackwell GPUs or drivers >= 580.
+services:
+  asr:
+    image: ghcr.io/tems-ai/temsai-asr-server:${ASR_IMAGE_TAG:-cuda12}
+    build:
+      args:
+        TORCH_VARIANT: ${TORCH_VARIANT:-cu126}
+    environment:
+      DEVICE: cuda
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

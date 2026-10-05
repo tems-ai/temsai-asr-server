@@ -1,0 +1,9 @@
+temsai-asr-server is starting. The first start downloads the model (~2.4 GB)
+and every start loads it (~1 min on CPU) — watch progress with:
+
+  kubectl logs -f deploy/{{ include "asr.fullname" . }} -n {{ .Release.Namespace }}
+
+Try it:
+
+  kubectl port-forward svc/{{ include "asr.fullname" . }} 8000:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+  curl http://localhost:8000/v1/audio/transcriptions -F file=@audio.wav{{ if include "asr.apiKeyEnabled" . }} -H "Authorization: Bearer $API_KEY"{{ end }}

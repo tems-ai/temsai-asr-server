@@ -1,0 +1,31 @@
+# CPU (amd64 or arm64):   docker compose up -d
+# NVIDIA GPU:             docker compose -f compose.yaml -f compose.gpu.yaml up -d
+# Build locally instead of pulling: add --build (see the build: section).
+services:
+  asr:
+    image: ghcr.io/tems-ai/temsai-asr-server:${ASR_IMAGE_TAG:-cpu}
+    build:
+      context: .
+      args:
+        TORCH_VARIANT: ${TORCH_VARIANT:-cpu}
+    restart: unless-stopped
+    ports:
+      - "${ASR_PORT:-8000}:8000"
+    environment:
+      # Leave empty to disable auth; clients then send no Authorization header.
+      API_KEY: ${API_KEY:-}
+      # Optional English-only model (better on noisy English; +~3 GB RAM).
+      ENGLISH_MODEL_ENABLED: ${ENGLISH_MODEL_ENABLED:-false}
+      DENOISE_ENABLED: ${DENOISE_ENABLED:-true}
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-209715200}
+      MAX_AUDIO_SECONDS: ${MAX_AUDIO_SECONDS:-0}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      # Model cache: the first start downloads ~2.4 GB, later starts reuse it.
+      - models:/models
+    # Measured on CPU: ~6-7 GB while the checkpoint loads, plus ~0.45 GB per
+    # minute of audio in a single request. Raise for long files or the English model.
+    mem_limit: ${ASR_MEM_LIMIT:-10g}
+
+volumes:
+  models:
