@@ -1,5 +1,6 @@
 *
 !asr_server/
 !requirements/runtime.txt
+!requirements/overrides.txt
 **/__pycache__
 **/*.pyc

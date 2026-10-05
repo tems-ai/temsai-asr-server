@@ -1,0 +1,15 @@
+# Security overrides installed with --no-deps on top of the resolved set in
+# runtime.txt. nemo_toolkit 3.0.0 caps these in its extras (hydra-core<=1.3.2,
+# lightning<=2.4.0); each override below was verified with the real model
+# (load, short + long audio, local-attention switch). Drop an entry once a
+# NeMo release allows the fixed version.
+#
+# CVE-2026-68508 (hydra.utils.instantiate on untrusted config), fixed in 1.3.4.
+hydra-core==1.3.4
+#
+# NOT overridable: lightning 2.6.6 (CVE-2026-58659, malicious checkpoint via
+# LightningModule.load_from_checkpoint) breaks `import nemo` — NeMo's
+# nv-one-logger telemetry (latest 2.3.1) rejects lightning 2.6's
+# Trainer.save_checkpoint signature. This server never calls
+# load_from_checkpoint (models load via restore_from from a pinned revision or
+# an operator-supplied file), so the vulnerable path is not reachable.

@@ -38,7 +38,7 @@ RUN apt-get update \
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-COPY requirements/runtime.txt /tmp/runtime.txt
+COPY requirements/runtime.txt requirements/overrides.txt /tmp/
 
 # Wheels pattern: every dependency becomes a wheel here (toolchain discarded
 # with this stage) and the runtime installs them offline. The constraint pins
@@ -49,6 +49,7 @@ RUN case "$TORCH_VARIANT" in cpu|cu126|cu130) ;; *) echo "unsupported TORCH_VARI
     && pip wheel --no-cache-dir --wheel-dir /usr/src/app/wheels \
        --extra-index-url "https://download.pytorch.org/whl/${TORCH_VARIANT}" \
        -c /tmp/torch-constraint.txt torch -r /tmp/runtime.txt \
+    && pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/overrides -r /tmp/overrides.txt \
     && pip uninstall -y pip setuptools wheel
 
 # --- optional baked checkpoint (air-gapped clusters) ---------------------------
@@ -98,8 +99,12 @@ COPY --from=model --chown=asr:asr /models /models
 # wandb/jedi: NeMo transitive deps never touched at inference. Everything else
 # that looks removable is NOT: nemo.collections.asr eagerly imports pyarrow,
 # onnx, pandas, sklearn, matplotlib and IPython at load time.
+# overrides (requirements/overrides.txt): security fixes newer than NeMo's own
+# pins, installed over the resolved set without dependency resolution.
 RUN --mount=type=bind,from=builder,source=/usr/src/app/wheels,target=/wheels \
+    --mount=type=bind,from=builder,source=/usr/src/app/overrides,target=/overrides \
     pip install --no-cache-dir --no-index --find-links=/wheels/ /wheels/* \
+    && pip install --no-cache-dir --no-index --no-deps /overrides/* \
     && pip uninstall -y wandb jedi \
     && pip uninstall -y pip setuptools wheel
 

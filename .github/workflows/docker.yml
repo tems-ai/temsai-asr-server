@@ -19,6 +19,7 @@ on:
       - Dockerfile
       - .dockerignore
       - requirements/runtime.txt
+      - requirements/overrides.txt
       - asr_server/**
       - scripts/smoke_test.sh
       - .github/workflows/docker.yml
@@ -27,6 +28,7 @@ on:
       - Dockerfile
       - .dockerignore
       - requirements/runtime.txt
+      - requirements/overrides.txt
       - asr_server/**
       - scripts/smoke_test.sh
       - .github/workflows/docker.yml
