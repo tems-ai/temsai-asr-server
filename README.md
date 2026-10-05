@@ -281,6 +281,7 @@ off with `git commit -s`, and usable in the official images.
 - Security problems: report them privately as described in [SECURITY.md](SECURITY.md).
 - Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 - Changes per release are listed in [CHANGELOG.md](CHANGELOG.md).
+- Using an AI coding agent? [AGENTS.md](AGENTS.md) (also `CLAUDE.md`) has the project's commands and rules.
 
 ## License
 
