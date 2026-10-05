@@ -27,6 +27,12 @@ on:
       - .github/workflows/docker.yml
   workflow_dispatch:
 
+# A newer push to the same branch supersedes an in-flight build (six heavy jobs);
+# release tag builds are never cancelled.
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
 permissions:
   contents: read
 
@@ -58,10 +64,10 @@ jobs:
           docker system prune -af >/dev/null
           df -h /
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       - name: Build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: ${{ matrix.platform.name }}
@@ -80,7 +86,7 @@ jobs:
 
       - name: Log in to GHCR
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -89,7 +95,7 @@ jobs:
       - name: Push by digest
         if: github.event_name != 'pull_request'
         id: push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: ${{ matrix.platform.name }}
@@ -106,7 +112,7 @@ jobs:
           digest="${{ steps.push.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: github.event_name != 'pull_request'
         with:
           name: digests-${{ matrix.variant.tag }}-${{ matrix.platform.slug }}
@@ -125,16 +131,16 @@ jobs:
       matrix:
         variant: [cpu, cuda12, cuda13]
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: /tmp/digests
           pattern: digests-${{ matrix.variant }}-*
           merge-multiple: true
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       - id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.IMAGE }}
           flavor: |
@@ -146,7 +152,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref_type == 'tag' && matrix.variant == 'cpu' }}
             type=raw,value=edge-${{ matrix.variant }},enable={{is_default_branch}}
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
