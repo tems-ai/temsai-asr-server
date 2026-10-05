@@ -19,6 +19,7 @@ spec:
   resources:
     requests:
       storage: 8Gi
+
 ---
 # Source: temsai-asr-server/templates/service.yaml
 apiVersion: v1
@@ -39,6 +40,7 @@ spec:
   selector:
     app.kubernetes.io/name: temsai-asr-server
     app.kubernetes.io/instance: temsai-asr-server
+
 ---
 # Source: temsai-asr-server/templates/deployment.yaml
 apiVersion: apps/v1
@@ -99,7 +101,9 @@ spec:
             - name: DEVICE
               value: "cuda"
             - name: DENOISE_ENABLED
-              value: "true"
+              value: "false"
+            - name: DENOISE_METHOD
+              value: "rnnoise"
             - name: MAX_UPLOAD_BYTES
               value: "209715200"
             - name: MAX_AUDIO_SECONDS

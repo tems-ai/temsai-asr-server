@@ -50,3 +50,31 @@ python benchmark/make_industrial_noise.py benchmark/speech_clean.mp3 --out bench
 ```
 
 The output is deterministic (`--seed 7`). Each file is peak-normalized to −0.9 dBFS.
+
+## Results (2026-10-05)
+
+Parakeet `parakeet-tdt-0.6b-v3` through the server (CPU image, arm64), Whisper `large-v3` with openai-whisper on
+CPU. Reference `extinguisher.txt` for both recordings; mixes made by `noise_benchmark.py` (`--seed 0`). WER, lower
+is better; one word is about 0.5%.
+
+| Condition | Whisper | Parakeet, no denoise | Parakeet, `spectral` | Parakeet, `rnnoise` |
+| --- | ---: | ---: | ---: | ---: |
+| recording, clean | 7.9% | 1.4% | 1.4% | 1.4% |
+| recording + industrial, 20 dB | 7.9% | 1.4% | 1.9% | 1.4% |
+| recording + industrial, 10 dB | 1.9% | 1.9% | 1.9% | 1.9% |
+| recording + industrial, 5 dB | 2.3% | 2.3% | 2.3% | 1.9% |
+| recording + industrial, 0 dB | 2.3% | 2.8% | 2.3% | 1.9% |
+| recording + industrial, -5 dB | 1.9% | 2.3% | 3.3% | 2.3% |
+| TTS, clean | 4.2% | 1.9% | 1.4% | 1.4% |
+| TTS + pink, 10 dB | 1.4% | 1.9% | 1.9% | 1.9% |
+| TTS + pink, 5 dB | 5.6% | 2.8% | 4.7% | 1.9% |
+| TTS + pink, 0 dB | 12.6% | 7.9% | 9.8% | 12.1% |
+| TTS + machine, 10 dB | 2.3% | 1.9% | 2.3% | 1.9% |
+| TTS + machine, 5 dB | 2.3% | 1.4% | 2.3% | 3.3% |
+| TTS + machine, 0 dB | 6.1% | 4.7% | 7.0% | 5.1% |
+| **Average** | 4.5% | **2.7%** | 3.3% | 3.0% |
+
+- Whisper's clean-audio errors are a hallucinated sentence, not misrecognitions.
+- Neither front-end helps Parakeet on average, hence `DENOISE_ENABLED=false` by default. RNNoise at full strength
+  (`mix=1`) was worse still (4.0% average, 15.0% at pink 0 dB); the server blends it 50/50 with the original.
+- Real-time factor on this machine: Parakeet about 0.15-0.25, Whisper large-v3 about 0.3-0.4.

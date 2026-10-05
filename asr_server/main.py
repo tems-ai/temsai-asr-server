@@ -155,7 +155,9 @@ def create_app(settings: Settings | None = None, transcriber=None, transcriber_e
                 raise HTTPException(413, f"audio is {duration:.0f}s long; limit is {settings.max_audio_seconds}s")
             transcriber, denoise_allowed = select_transcriber(model, language)
             if settings.denoise and denoise_allowed:
-                wav = await asyncio.to_thread(denoise_wav, wav, workdir)
+                wav = await asyncio.to_thread(
+                    denoise_wav, wav, workdir, settings.denoise_method, settings.rnnoise_model
+                )
             started = time.monotonic()
             result = await transcriber.transcribe(wav, language=language, duration=duration)
             logger.info(

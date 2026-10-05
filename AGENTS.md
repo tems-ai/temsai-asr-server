@@ -17,7 +17,7 @@ images, a Helm chart and plain Kubernetes manifests.
 | `asr_server/transcriber.py` | Model loading, routing (v3 / English v2), long-audio local attention, serialized inference |
 | `asr_server/confidence.py` | NeMo hypothesis → Whisper `verbose_json` (words, segments, confidence) |
 | `asr_server/audio.py` | ffmpeg/ffprobe decoding to 16 kHz mono |
-| `asr_server/denoise.py` | High-pass + spectral-gating front-end |
+| `asr_server/denoise.py` | Optional RNNoise or high-pass + spectral-gating front-end |
 | `asr_server/formats.py` | `srt` / `vtt` rendering |
 | `asr_server/model_fetch.py` | Local `.nemo` file or pinned Hugging Face download |
 | `tests/` | Unit tests; torch and NeMo are stubbed |

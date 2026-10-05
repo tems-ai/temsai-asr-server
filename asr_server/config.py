@@ -16,6 +16,8 @@ DEFAULT_MODEL_REPO = "nvidia/parakeet-tdt-0.6b-v3"
 DEFAULT_MODEL_REVISION = "7c35754d166cca382ad1e53e68b01e7c575f3a1d"
 DEFAULT_ENGLISH_MODEL_REPO = "nvidia/parakeet-tdt-0.6b-v2"
 DEFAULT_ENGLISH_MODEL_REVISION = "ae9ad07059c7c739ffaf932226a8fe64ae2620b0"
+# Baked into the image by the Dockerfile (pinned commit + SHA-256).
+DEFAULT_RNNOISE_MODEL_PATH = "/usr/local/share/rnnoise/std.rnnn"
 
 _TRUE = ("1", "true", "yes", "on")
 _FALSE = ("0", "false", "no", "off")
@@ -78,6 +80,8 @@ class Settings:
     torch_num_threads: int | None
     max_upload_bytes: int
     denoise: bool
+    denoise_method: str  # "rnnoise" | "spectral"
+    rnnoise_model: str
     api_key: str
     long_audio_seconds: int  # switch to local attention above this; 0 disables
     max_audio_seconds: int  # reject longer audio with 413; 0 = unlimited
@@ -96,7 +100,9 @@ class Settings:
             device=_choice("DEVICE", "auto", ("auto", "cpu", "cuda")),
             torch_num_threads=_int("TORCH_NUM_THREADS", None),
             max_upload_bytes=_int("MAX_UPLOAD_BYTES", 200 * 1024 * 1024) or 0,
-            denoise=_bool("DENOISE_ENABLED", True),
+            denoise=_bool("DENOISE_ENABLED", False),
+            denoise_method=_choice("DENOISE_METHOD", "rnnoise", ("rnnoise", "spectral")),
+            rnnoise_model=os.getenv("RNNOISE_MODEL_PATH", "").strip() or DEFAULT_RNNOISE_MODEL_PATH,
             api_key=os.getenv("API_KEY", ""),
             long_audio_seconds=_int("LONG_AUDIO_SECONDS", 180) or 0,
             max_audio_seconds=_int("MAX_AUDIO_SECONDS", 0) or 0,
@@ -109,13 +115,19 @@ class Settings:
             raise ValueError("LONG_AUDIO_SECONDS must be >= 0")
         if settings.max_audio_seconds < 0:
             raise ValueError("MAX_AUDIO_SECONDS must be >= 0")
+        if settings.denoise and settings.denoise_method == "rnnoise" and not os.path.isfile(settings.rnnoise_model):
+            # Not fatal: outside the image (local dev) the model is usually absent,
+            # and denoise_wav degrades to undenoised audio per request.
+            logger.warning(
+                "RNNoise model %s not found; requests will be transcribed undenoised", settings.rnnoise_model
+            )
         logger.info(
             "config: model=%s english_model=%s device=%s denoise=%s auth=%s long_audio_seconds=%s "
             "max_audio_seconds=%s",
             settings.model.model_id,
             settings.english_model.model_id if settings.english_model else None,
             settings.device,
-            settings.denoise,
+            settings.denoise and settings.denoise_method,
             bool(settings.api_key),
             settings.long_audio_seconds,
             settings.max_audio_seconds,

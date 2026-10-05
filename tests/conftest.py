@@ -39,6 +39,8 @@ def make_settings(**overrides) -> Settings:
         torch_num_threads=None,
         max_upload_bytes=10 * 1024 * 1024,
         denoise=False,
+        denoise_method="rnnoise",
+        rnnoise_model="/nonexistent/std.rnnn",
         api_key="",
         long_audio_seconds=180,
         max_audio_seconds=0,

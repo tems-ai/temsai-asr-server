@@ -45,4 +45,9 @@ assert d["segments"] and d["segments"][0]["avg_logprob"] <= 0
 print("verbose_json ok:", len(d["words"]), "words")'
 
 post -F response_format=srt | grep -q -- "-->" && echo "srt ok"
+
+# DENOISE_METHOD=rnnoise is off by default, so check the baked model is usable
+# by the runtime user (a bad --chmod once made it unreadable).
+docker exec "$name" ffmpeg -nostdin -v error -f lavfi -i "sine=d=1" \
+  -af "arnndn=m=/usr/local/share/rnnoise/std.rnnn" -f null - && echo "rnnoise ok"
 echo "SMOKE TEST PASSED"

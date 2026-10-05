@@ -32,7 +32,9 @@ config:
   englishModelEnabled: false
   # auto | cpu | cuda
   device: auto
-  denoiseEnabled: true
+  denoiseEnabled: false
+  # rnnoise | spectral
+  denoiseMethod: rnnoise
   maxUploadBytes: 209715200
   # 0 = unlimited. Each minute of audio costs ~0.45 GB RAM on CPU; size limits together.
   maxAudioSeconds: 0

@@ -124,7 +124,7 @@ def test_whisper_model_name_is_accepted(make_client, wav_bytes):
 @requires_ffmpeg
 def test_denoise_applied_when_enabled(make_client, wav_bytes, monkeypatch):
     calls = []
-    monkeypatch.setattr("asr_server.main.denoise_wav", lambda wav, workdir: calls.append(wav) or wav)
+    monkeypatch.setattr("asr_server.main.denoise_wav", lambda wav, workdir, *_: calls.append(wav) or wav)
     post_audio(make_client(make_settings(denoise=True)), wav_bytes)
     assert len(calls) == 1
     post_audio(make_client(make_settings(denoise=False)), wav_bytes)

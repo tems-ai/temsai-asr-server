@@ -18,7 +18,8 @@ CPU or NVIDIA GPU, on `amd64` and `arm64`.
   An optional English-only model (`v2`) can be routed for `language=en`.
 - Long audio: switches the encoder to local attention above a threshold, so a
   10-minute file fits in memory on CPU.
-- Optional DSP noise reduction tuned for noisy, machine-heavy environments.
+- Optional noise reduction (RNNoise or DSP spectral gating), off by default:
+  Parakeet is noise-robust on its own (see [Noise reduction](#noise-reduction)).
 - Optional Bearer-token auth, upload and duration limits.
 - Images for CPU, CUDA 12 and CUDA 13 on `linux/amd64` and `linux/arm64`, plus
   Docker Compose files, a Helm chart and plain Kubernetes manifests.
@@ -43,10 +44,9 @@ same constraints can use it:
 
 - It runs **fully on premises**: CPU or GPU, x86 or ARM, Docker or Kubernetes,
   including air-gapped clusters (`BAKE_MODEL=true` puts the model in the image).
-- It is **built for industrial environments**: an embedded denoise front-end
-  (high-pass filter + adaptive spectral gating, tuned on real factory
-  recordings) runs before recognition. On a ground-truth factory clip it cut
-  the word error rate from 48% to 32%, with no extra service to deploy.
+- It is **built for industrial environments**: it is tested against factory
+  noise down to -5 dB SNR, and ships two optional noise-reduction front-ends
+  (RNNoise and DSP spectral gating) with no extra service to deploy.
 - It **speaks the OpenAI API**, so existing Whisper clients and tools switch to
   a local engine by changing a base URL.
 
@@ -219,13 +219,36 @@ startup with a clear error.
 | `ENGLISH_MODEL_ENABLED` | `false` | Also load `nvidia/parakeet-tdt-0.6b-v2` and route `language=en` to it. On noisy English audio it halved WER compared with v3 (48% → 24%) in our tests. Costs about 3 GB more RAM. `ENGLISH_MODEL_REPO`, `_REVISION`, `_PATH` and `_ID` work like the `MODEL_*` variables. |
 | `DEVICE` | `auto` | `auto`, `cpu` or `cuda`. With `cuda`, startup fails if no GPU is visible. |
 | `TORCH_NUM_THREADS` | torch default | CPU threads used for inference. |
-| `DENOISE_ENABLED` | `true` | Applies an 80 Hz high-pass filter, non-stationary spectral gating and peak normalization before the multilingual model. Never applied to the English model, where it hurt accuracy. |
+| `DENOISE_ENABLED` | `false` | Runs noise reduction before the multilingual model. Off by default because it raised WER on our benchmark (see [Noise reduction](#noise-reduction)). Never applied to the English model, where it hurt accuracy. |
+| `DENOISE_METHOD` | `rnnoise` | `rnnoise`: RNNoise (FFmpeg `arnndn`, Xiph `std` model) blended 50/50 with the original. `spectral`: 80 Hz high-pass, non-stationary spectral gating and peak normalization. |
+| `RNNOISE_MODEL_PATH` | `/usr/local/share/rnnoise/std.rnnn` | RNNoise model file (`.rnnn`). The image ships the Xiph `std` model. |
 | `LONG_AUDIO_SECONDS` | `180` | Above this duration the encoder uses local attention (256/256 context). `0` keeps full attention always. |
 | `MAX_AUDIO_SECONDS` | `0` (unlimited) | Rejects longer audio with `413` before inference. |
 | `MAX_UPLOAD_BYTES` | `209715200` (200 MB) | Upload size limit. |
 | `API_KEY` | empty | When set, `/v1/*` requires `Authorization: Bearer <API_KEY>`. |
 | `LOG_LEVEL` | `INFO` | Server log level. |
 | `NEMO_LOG_LEVEL` | `ERROR` | NeMo's log level after the model has loaded. NeMo repeats warnings on every request otherwise. |
+
+## Noise reduction
+
+Parakeet is trained on noisy speech and handles machine noise well without
+help, so noise reduction is off by default. On `benchmark/` (one 214-word
+passage, as TTS and as a real recording, mixed with pink, machine and
+industrial noise from 20 to -5 dB SNR) the average WER of `parakeet-tdt-0.6b-v3`
+over 13 conditions was:
+
+| Front-end | Average WER | Pink noise, 0 dB |
+| --- | ---: | ---: |
+| None (default) | 2.7% | 7.9% |
+| `rnnoise` (mix 0.5) | 3.0% | 12.1% |
+| `spectral` | 3.3% | 9.8% |
+| RNNoise at full strength | 4.0% | 15.0% |
+
+Enhancers remove noise a listener hears but leave artifacts the model was not
+trained on. They can still help on much noisier audio: on an earlier
+ground-truth factory clip, where Parakeet scored 48% WER, `spectral` cut it to
+32%. Measure on your own recordings with `benchmark/noise_benchmark.py` before
+turning `DENOISE_ENABLED` on.
 
 ## Sizing
 

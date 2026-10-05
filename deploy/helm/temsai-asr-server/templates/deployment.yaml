@@ -71,6 +71,8 @@ spec:
               value: {{ .Values.config.device | quote }}
             - name: DENOISE_ENABLED
               value: {{ .Values.config.denoiseEnabled | quote }}
+            - name: DENOISE_METHOD
+              value: {{ .Values.config.denoiseMethod | quote }}
             - name: MAX_UPLOAD_BYTES
               value: {{ .Values.config.maxUploadBytes | int64 | quote }}
             - name: MAX_AUDIO_SECONDS
