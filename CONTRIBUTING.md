@@ -3,6 +3,34 @@
 Issues and pull requests are welcome. For anything larger than a small fix,
 open an issue first so we can agree on the approach before you write the code.
 
+Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md). Report
+security problems privately, as described in [SECURITY.md](SECURITY.md), not
+in a public issue.
+
+## Where to start
+
+- Issues labelled
+  [`good first issue`](https://github.com/tems-ai/temsai-asr-server/labels/good%20first%20issue)
+  are small and well scoped. Comment on one to say you are working on it.
+- Issues labelled
+  [`help wanted`](https://github.com/tems-ai/temsai-asr-server/labels/help%20wanted)
+  are ones we would like help with.
+- Documentation fixes, new client examples and test audio that shows a
+  recognition problem are useful too, and need no prior discussion.
+
+Help that is especially welcome: benchmarks on other hardware (add them to
+[Sizing](README.md#sizing)), deployment recipes, and reports of how the
+denoiser performs on your kind of noise.
+
+## Pull requests
+
+- Keep each pull request to one change, with tests for new behavior.
+- Add a line under "Unreleased" in [CHANGELOG.md](CHANGELOG.md) if users will
+  notice the change.
+- Sign off every commit (`git commit -s`, see below).
+- We aim to give a first review within a week. If you have heard nothing after
+  that, a comment on the pull request is welcome.
+
 ## Development
 
 See [Development](README.md#development) in the README for setup. Before you

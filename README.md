@@ -1,5 +1,12 @@
 # temsai-asr-server
 
+[![CI](https://github.com/tems-ai/temsai-asr-server/actions/workflows/ci.yml/badge.svg)](https://github.com/tems-ai/temsai-asr-server/actions/workflows/ci.yml)
+[![Docker](https://github.com/tems-ai/temsai-asr-server/actions/workflows/docker.yml/badge.svg)](https://github.com/tems-ai/temsai-asr-server/actions/workflows/docker.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Images: GHCR](https://img.shields.io/badge/images-ghcr.io-2496ED?logo=docker&logoColor=white)](https://github.com/tems-ai/temsai-asr-server/pkgs/container/temsai-asr-server)
+![Platforms: amd64 | arm64](https://img.shields.io/badge/platforms-amd64%20%7C%20arm64-lightgrey)
+[![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 A self-hosted speech-to-text server for **NVIDIA Parakeet-TDT** models with an
 **OpenAI/Whisper-compatible API**. Point any Whisper client at it. It runs on
 CPU or NVIDIA GPU, on `amd64` and `arm64`.
@@ -261,9 +268,20 @@ model:
   runners and publishes multi-arch manifests to GHCR;
 - **Run workflow** (manual) builds all six without publishing.
 
+## Community
+
 Contributions are welcome. Pull requests are accepted under the
 [contribution terms](CONTRIBUTING.md#contribution-terms): Apache-2.0, signed
 off with `git commit -s`, and usable in the official images.
+
+- New here? Look for issues labelled
+  [`good first issue`](https://github.com/tems-ai/temsai-asr-server/labels/good%20first%20issue)
+  and read [CONTRIBUTING.md](CONTRIBUTING.md).
+- Bugs and feature requests: [open an issue](https://github.com/tems-ai/temsai-asr-server/issues/new/choose).
+- Security problems: report them privately as described in [SECURITY.md](SECURITY.md).
+- Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+- Changes per release are listed in [CHANGELOG.md](CHANGELOG.md).
+- Using an AI coding agent? [AGENTS.md](AGENTS.md) (also `CLAUDE.md`) has the project's commands and rules.
 
 ## License
 

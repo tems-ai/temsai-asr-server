@@ -1,0 +1,60 @@
+name: Bug report
+description: Something does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please do not include audio you are not allowed
+        to share, and never paste API keys.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The request (e.g. a `curl` command) and, if you can, a short audio file that shows the problem.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or image tag
+      placeholder: e.g. ghcr.io/tems-ai/temsai-asr-server:0.2.0-cpu, or a commit
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - docker run
+        - Docker Compose
+        - Helm
+        - Plain Kubernetes manifests
+        - From source
+    validations:
+      required: true
+  - type: input
+    id: hardware
+    attributes:
+      label: Hardware
+      placeholder: e.g. CPU x86_64 8 cores, or NVIDIA L4 with driver 570
+  - type: textarea
+    id: config
+    attributes:
+      label: Non-default settings
+      description: Environment variables you changed (leave out `API_KEY`).
+      render: shell
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server logs
+      description: The container log around the failure, with `LOG_LEVEL=DEBUG` if possible.
+      render: text
