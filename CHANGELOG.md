@@ -23,6 +23,8 @@ project uses [Semantic Versioning](https://semver.org/).
   stays Apache-2.0.
 - Contribution terms with DCO sign-off, code of conduct, security policy and
   issue/PR templates.
+- Images apply pending Debian security updates at build time, so a fix is
+  not held back until the Python base image is rebuilt.
 - RNNoise front-end (`DENOISE_METHOD=rnnoise`, the default method when
   noise reduction is enabled) through FFmpeg's `arnndn` filter, blended 50/50
   with the original audio. The image ships the Xiph `std` model;
