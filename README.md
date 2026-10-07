@@ -93,6 +93,14 @@ print(result.text)
 
 ## Image variants
 
+Official images are published to the GitHub Container Registry as
+[`ghcr.io/tems-ai/temsai-asr-server`](https://github.com/tems-ai/temsai-asr-server/pkgs/container/temsai-asr-server),
+multi-arch, so Docker pulls the right platform:
+
+```bash
+docker pull ghcr.io/tems-ai/temsai-asr-server:cpu
+```
+
 | Tag | PyTorch | Platforms | Host requirements |
 | --- | --- | --- | --- |
 | `cpu`, `latest`, `<version>-cpu` | CPU | amd64, arm64 | none |
