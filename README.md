@@ -14,7 +14,7 @@ CPU or NVIDIA GPU, on `amd64` and `arm64`.
 - `POST /v1/audio/transcriptions`: same request and response shapes as OpenAI's
   endpoint (`json`, `verbose_json`, `text`, `srt`, `vtt`).
 - Per-word timestamps and **per-word confidence** in `verbose_json`.
-- 25 European languages with automatic language detection (`parakeet-tdt-0.6b-v3`).
+- [25 European languages](#supported-languages) with automatic language detection (`parakeet-tdt-0.6b-v3`).
   An optional English-only model (`v2`) can be routed for `language=en`.
 - Long audio: switches the encoder to local attention above a threshold, so a
   10-minute file fits in memory on CPU.
@@ -93,6 +93,14 @@ print(result.text)
 
 ## Image variants
 
+Official images are published to the GitHub Container Registry as
+[`ghcr.io/tems-ai/temsai-asr-server`](https://github.com/tems-ai/temsai-asr-server/pkgs/container/temsai-asr-server),
+multi-arch, so Docker pulls the right platform:
+
+```bash
+docker pull ghcr.io/tems-ai/temsai-asr-server:cpu
+```
+
 | Tag | PyTorch | Platforms | Host requirements |
 | --- | --- | --- | --- |
 | `cpu`, `latest`, `<version>-cpu` | CPU | amd64, arm64 | none |
@@ -162,7 +170,7 @@ These files are rendered from the chart with default values by
 | --- | --- | --- |
 | `file` | required | Audio or video, up to `MAX_UPLOAD_BYTES`. |
 | `model` | | Optional. Selects the English model when it matches its id; any other value (e.g. `whisper-1`) uses the default model. |
-| `language` | | ISO-639-1 code. Not needed for recognition: the model detects the language itself. When set, it is echoed in the response, and `en` routes to the English model if enabled. When absent, the response's `language` is detected from the text (py3langid, restricted to the 25 supported languages). |
+| `language` | | ISO-639-1 code. Not needed for recognition: the model detects the language itself. When set, it is echoed in the response, and `en` routes to the English model if enabled. When absent, the response's `language` is detected from the text (py3langid, restricted to the [25 supported languages](#supported-languages)). |
 | `prompt` | | Accepted for compatibility and ignored: Parakeet has no prompt biasing. |
 | `response_format` | `json` | `json` → `{"text"}`; `verbose_json` → text, language, duration, words, segments; `text`, `srt`, `vtt` → plain text. |
 
@@ -185,6 +193,20 @@ Example `verbose_json`:
   "segments": [{"id": 0, "start": 0.32, "end": 10.24, "text": "He hoped …", "avg_logprob": -0.21}]
 }
 ```
+
+### Supported languages
+
+`parakeet-tdt-0.6b-v3` recognizes these 25 languages (ISO-639-1 codes, as
+accepted in `language` and returned in the response):
+
+Bulgarian (`bg`), Croatian (`hr`), Czech (`cs`), Danish (`da`), Dutch (`nl`),
+English (`en`), Estonian (`et`), Finnish (`fi`), French (`fr`), German (`de`),
+Greek (`el`), Hungarian (`hu`), Italian (`it`), Latvian (`lv`), Lithuanian
+(`lt`), Maltese (`mt`), Polish (`pl`), Portuguese (`pt`), Romanian (`ro`),
+Russian (`ru`), Slovak (`sk`), Slovenian (`sl`), Spanish (`es`), Swedish
+(`sv`), Ukrainian (`uk`).
+
+The optional English model (`ENGLISH_MODEL_ENABLED`) recognizes English only.
 
 ### Confidence semantics
 
@@ -303,6 +325,7 @@ off with `git commit -s`, and usable in the official images.
 - Bugs and feature requests: [open an issue](https://github.com/tems-ai/temsai-asr-server/issues/new/choose).
 - Security problems: report them privately as described in [SECURITY.md](SECURITY.md).
 - Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+- Accessibility: what the captions can and cannot do, and how to report a barrier, in [ACCESSIBILITY.md](ACCESSIBILITY.md).
 - Changes per release are listed in [CHANGELOG.md](CHANGELOG.md).
 - Using an AI coding agent? [AGENTS.md](AGENTS.md) (also `CLAUDE.md`) has the project's commands and rules.
 
