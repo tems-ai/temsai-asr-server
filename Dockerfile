@@ -102,7 +102,10 @@ LABEL org.opencontainers.image.title="temsai-asr-server" \
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # libgomp1: torch's native libs link libgomp.so.1, absent from slim.
+# upgrade: Debian security fixes land days before the python base image is
+# rebuilt (perl-base deb12u4 failed the Trivy gate that way).
 RUN apt-get update \
+    && apt-get upgrade -y \
     && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
